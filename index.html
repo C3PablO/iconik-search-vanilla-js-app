@@ -86,7 +86,7 @@
       z-index: 999;
     }
 
-    .search input {
+    .search__input {
       font-size: 2em;
       color: #555;
       box-sizing: border-box;
@@ -100,19 +100,21 @@
 
     }
 
-    .search input:focus {
+    .search__input:focus {
       background-color: #555;
       color: #f8f8f8;
     }
 
-    .search input:focus {
+    .search__input:focus {
         outline: none;
     }
   </style>
 
   <body>
     <main>
-      <div class="search"><input type="text" placeholder="Search" id="search"></div>
+      <div class="search">
+        <input type="text" placeholder="Search" id="search" class="search__input">
+      </div>
       <div class="asset-list" id="asset-list"></div>
     </main>
 
