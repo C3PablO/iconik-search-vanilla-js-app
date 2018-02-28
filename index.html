@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Iconik</title>
+  </head>
+  <style type="text/css">
+    body {
+      background-color: #f8f8f8;
+      color: #333;
+      counter-reset: page;
+      -webkit-font-smoothing: antialiased;
+      -moz-font-smoothing: grayscale;
+      font-family: monospace;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      margin: 0;
+      text-transform: uppercase;
+    }
+
+    main {
+      margin: 0 auto;
+      max-width: 45em;
+      padding: 3em 1em 1em 1em;
+    }
+
+    .asset-list__item {
+      position: relative;
+      background-color: #eee;
+      float: left;
+      max-width: 45%;
+      transition: opacity 0.2s, transform 0.2s;
+      width: 288px;
+      height: 180px;
+      overflow: hidden;
+      cursor: pointer;
+      margin: 5px;
+    }
+    .asset-list__item:hover {
+      transform: scale(1.1);
+      z-index: 10;
+    }
+
+    .asset-list__item__image {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 100%;
+      opacity: 1;
+      margin: 0;
+      transition: opacity 0.2s;
+    }
+
+    .asset-list__item__title {
+      transition: bottom 0.2s, transform 0.2s;
+      position: absolute;
+      z-index: 1;
+      bottom: -50px;
+      left: 0;
+      padding: 10px;
+      width: 100%;
+      color: #f8f8f8;
+      background-color: rgba(0, 0, 0, .3);
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+      font-size: .8em;
+      margin: 0;
+    }
+
+    .asset-list__item:hover .asset-list__item__title {
+      bottom: 0;
+    }
+
+    .asset-list__item__image--loading {
+      opacity: 0;
+    }
+
+    .search {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3em;
+      background-color: #f3f3f3;
+      z-index: 999;
+    }
+
+    .search input {
+      font-size: 2em;
+      color: #555;
+      box-sizing: border-box;
+      padding: 0 1em;
+      position: absolute;
+      width: 100;
+      height: 100%;
+      background: none;
+      border: none;
+      width: 100%;
+
+    }
+
+    .search input:focus {
+      background-color: #555;
+      color: #f8f8f8;
+    }
+
+    .search input:focus {
+        outline: none;
+    }
+  </style>
+
+  <body>
+    <main>
+      <div class="search"><input type="text" placeholder="Search" id="search"></div>
+      <div class="asset-list" id="asset-list"></div>
+    </main>
+
+    <script>
+      var lastpage = false;
+      var appId = '<APP_ID>';
+      var token = '<TOKEN>';
+
+      function onClickAsset(e) {
+        alert(e.currentTarget.id);
+      }
+
+      function onSearch(e) {
+        lastpage = false;
+        var input = document.getElementById('asset-list');
+        input.innerHTML = '';
+        page = 1;
+        addPage(page);
+      }
+
+      document.getElementById('search').oninput=onSearch;
+
+      function getDocumentHeight() {
+        var body = document.body;
+        var html = document.documentElement;
+
+        return Math.max(
+          body.scrollHeight,
+          body.offsetHeight,
+          html.clientHeight,
+          html.scrollHeight,
+          html.offsetHeight
+        );
+      };
+
+      function getScrollTop() {
+        return window.pageYOffset !== undefined ?
+        window.pageYOffset
+        :
+        (document.documentElement || document.body.parentNode || document.body).scrollTop;
+      }
+
+      function getAssetImage(url) {
+        var image = new Image();
+        image.className = 'asset-list__item__image asset-list__item__image--loading';
+        image.src = url;
+
+        image.onload = function () {
+          image.classList.remove('asset-list__item__image--loading');
+        };
+
+        return image;
+      }
+
+      function getAssetTitle(name) {
+        var title = document.createElement('h2');
+        title.className = 'asset-list__item__title';
+        title.innerHTML = name;
+        return title;
+      }
+
+      function getAsset(url, name, id) {
+        var assetImage = getAssetImage(url);
+        var assetTitle = getAssetTitle(name);
+        var asset = document.createElement('asset');
+        asset.className = 'asset-list__item';
+        asset.id = id;
+        asset.onclick = onClickAsset;
+        asset.appendChild(assetTitle);
+        asset.appendChild(assetImage);
+
+        return asset;
+      }
+
+      function getAssetPage(objects, page) {
+        var pageElement = document.createElement('div');
+        pageElement.className = 'asset-list__page';
+
+        objects.forEach(function(item) {
+          var url;
+          (item.keyframes || []).forEach(function(keyframe) {
+            if (keyframe.type = 'KEYFRAME') {
+              url = keyframe.url;
+            }
+          })
+          document.getElementById('asset-list').appendChild(getAsset(url, item.title, item.id));
+        })
+
+        return pageElement;
+      }
+
+      function searchRequest(theUrl, callback) {
+        xhr = new XMLHttpRequest();
+        xhr.open('POST', theUrl);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('app-id', appId);
+        xhr.setRequestHeader('auth-token', token);
+
+        xhr.onreadystatechange = function() { 
+          if (xhr.readyState == 4 && xhr.status == 200) {
+            callback(xhr.responseText);
+          }
+        }
+        xhr.send(JSON.stringify(
+          {
+            'query': document.getElementById('search').value,
+            'doc_types':['assets'],
+            'facets_filters':[],
+            'filter': {
+               'operator':'AND','terms':[
+                {'name':'status','value':'ACTIVE'},{'name':'status','value':'ACTIVE'}
+              ]
+            },
+            'sort':[{'name':'date_created','order':'desc' }]
+          }
+        ));
+      }
+
+      function requestCallback(data, page) {
+        if (data.pages == page) {
+          lastpage = true;
+        }
+        assetList.appendChild(getAssetPage(data.objects, page));
+      }
+
+      function fetchPage(page) {
+        if (!lastpage) {
+          searchRequest('/API/search/v1/search/?per_page=25' + '&page=' + page, function(data) {
+            requestCallback(JSON.parse(data), page);
+          });
+        }
+      }
+
+      function addPage(page) {
+        fetchPage(page);
+      }
+
+      var assetList = document.getElementById('asset-list');
+      var page = 0;
+
+      addPage(++page);
+
+      window.onscroll = function () {
+        if (getScrollTop() < getDocumentHeight() - window.innerHeight) return;
+        addPage(++page);
+      };
+    </script>
+  </body>
+</html>
